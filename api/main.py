@@ -25,8 +25,8 @@ async def orb_run(request: OrbSlamRequest):
         
         # Creamos la carpeta del video
         
-        folder_path = os.path.join(request.input_path, request.video_name)
-        os.mkdir(folder_path, exist_ok=True)
+        folder_path = os.path.join(request.output_path, request.video_name)
+        os.mkdir(folder_path)
         
         # Generamos bundles.csv
         
