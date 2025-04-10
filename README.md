@@ -4,16 +4,6 @@ Este proyecto permite generar **nubes de puntos 3D** a partir de un video grabad
 
 ---
 
-## 🚀 Características
-
-- Detección de códigos QR para referencia espacial.
-- Segmentación de objetos por umbral (color/luminosidad).
-- Proyección espacial y generación de nube de puntos.
-- Soporte para múltiples distancias y configuraciones.
-- Totalmente configurable mediante archivo JSON.
-
----
-
 ## 📁 Estructura del Proyecto
 
 ```
