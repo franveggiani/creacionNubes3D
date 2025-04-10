@@ -26,8 +26,13 @@ async def orb_run(request: OrbSlamRequest):
         # Creamos la carpeta del video
         
         folder_path = os.path.join(request.output_path, request.video_name)
-        os.mkdir(folder_path)
         
+        if not os.path.exists(folder_path):
+            os.makedirs(folder_path)
+            print(f"Carpeta creada: {folder_path}")
+        else:
+            print(f"La carpeta ya existe: {folder_path}")
+            
         # Generamos bundles.csv
         
         tracker_detection_path = os.path.join(request.input_path, request.video_name+'_detections.csv')
