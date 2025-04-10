@@ -40,12 +40,12 @@ COPY . .
 
 # --- Compilación del script C++ ---
 WORKDIR /app/Release
-RUN dos2unix build.sh && chmod +x build.sh && ./build.sh
+RUN dos2unix ./build.sh && chmod +x ./build.sh 
     
 # --- Configuración de entorno adicional ---
 RUN echo "export LD_LIBRARY_PATH=$G2O_LIB_PATH:\$LD_LIBRARY_PATH" >> ~/.bashrc
 
-# export LD_LIBRARY_PATH="/app/include/Thirdparty/g2o/lib/"
+RUN ./build.sh
 
 WORKDIR /app
 # --- Exponer puerto y comando de inicio ---
