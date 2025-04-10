@@ -25,6 +25,8 @@ ENV EIGEN3_INCLUDE=/usr/include/eigen3
 ENV PROJECT_INCLUDE=/app/include
 ENV OPENCV_LIB=/usr/lib/x86_64-linux-gnu
 ENV G2O_LIB=/app/include/Thirdparty/g2o/lib
+
+ENV LD_LIBRARY_PATH=""
 ENV LD_LIBRARY_PATH=${G2O_LIB}:${OPENCV_LIB}:${LD_LIBRARY_PATH}
 
 
