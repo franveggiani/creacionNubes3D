@@ -117,6 +117,8 @@ def get_best_reconstruction(output_path:str, dists_list:list, min_mer:int=10, mi
     path_minimo = min_path
     dists = [str(i) for i in range(dists_list[0], dists_list[1], dists_list[2])]
     
+    # Meter reconstruction() acá. VER ARCHIVOS ORIGINALES
+    
     for dist in dists:
         for path in Path(output_path).rglob(input_csv_name):    # Buscar manera de leer el archivo que genera el comando anterior por distancia de inicialización
                 # print("path:", path)
