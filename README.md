@@ -37,7 +37,11 @@ docker-compose up     (run build)
 5. Para compilar el script
 ```bash
 docker exec -it triangulacion /bin/bash
-cd Release && ./build.sh
+Release/build.sh
+```
+6. Reiniciar contenedor
+```
+docker-compose down && docker-compose up
 ```
 6. El servidor HTTP uvicorn estará disponible en localhost:8001
 ---
