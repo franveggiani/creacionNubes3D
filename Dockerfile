@@ -28,8 +28,12 @@ ENV G2O_LIB=/app/include/Thirdparty/g2o/lib
 ENV LD_LIBRARY_PATH=${G2O_LIB}:${OPENCV_LIB}:${LD_LIBRARY_PATH}
 
 
+
 # --- Establece el directorio de trabajo ---
 WORKDIR /app
+
+# --- Configuración de entorno adicional ---
+RUN echo 'export LD_LIBRARY_PATH=$G2O_LIB_PATH:$LD_LIBRARY_PATH' >> ~/.bashrc
 
 # --- Instalación de dependencias Python (separado para usar cache) ---
 COPY requirements.txt .
@@ -41,9 +45,6 @@ COPY . .
 # --- Compilación del script C++ ---
 WORKDIR /app/Release
 RUN dos2unix ./build.sh && chmod +x ./build.sh 
-    
-# --- Configuración de entorno adicional ---
-RUN echo "export LD_LIBRARY_PATH=$G2O_LIB_PATH:\$LD_LIBRARY_PATH" >> ~/.bashrc
 
 RUN ./build.sh
 
