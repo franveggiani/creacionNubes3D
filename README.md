@@ -39,7 +39,7 @@ docker-compose up     (run build)
 docker exec -it triangulacion /bin/bash
 cd Release && ./build.sh
 ```
-5. El servidor HTTP uvicorn estará disponible en localhost:8001
+6. El servidor HTTP uvicorn estará disponible en localhost:8001
 ---
 
 ## 🧾 Ejemplo de petición
