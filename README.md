@@ -89,12 +89,6 @@ docker-compose up     (run build)
 
 ---
 
-## 📦 Ejemplo de uso
-
-```bash
-python main.py config.json
-```
-
 > Asegurate de tener tu video en `./input_path/` al igual que los `.csv`, y la calibración en `.input_path/calib`.
 
 ---
