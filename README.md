@@ -34,6 +34,11 @@ creacionNubes3D/
 docker-compose build  (si es por primera vez)
 docker-compose up     (run build)
 ```
+5. Para compilar el script
+```bash
+docker exec -it triangulacion /bin/bash
+cd Release && ./build.sh
+```
 5. El servidor HTTP uvicorn estará disponible en localhost:8001
 ---
 
