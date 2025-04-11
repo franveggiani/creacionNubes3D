@@ -86,32 +86,29 @@ def read_and_process_csv(csv_file_path):
 
     return video_name, suma_error_ratio, media_error_ratio, init_frames
 
-def reconstruction(calib_path, bundles_path, frames_path, output_path, qr_dist, dists_list):
-    dists = [str(i) for i in range(dists_list[0], dists_list[1], dists_list[2])]
+def reconstruction(calib_path, bundles_path, frames_path, output_path, qr_dist, dist):
     
-    for dist in dists:
-        
-        command = [
-            "./Release/triangulacionDeBayas",
-            "-c", calib_path,
-            "-d", bundles_path,
-            "-x", str(qr_dist),     # QR dist
-            "-i", str(frames_path),
-            "-o", str(output_path),
-            "--init_distance", dist
-        ]
+    command = [
+        "./Release/triangulacionDeBayas",
+        "-c", calib_path,
+        "-d", bundles_path,
+        "-x", str(qr_dist),     # QR dist
+        "-i", str(frames_path),
+        "-o", str(output_path),
+        "--init_distance", dist
+    ]
 
-        result = subprocess.run(
-            command,
-            check=True,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True
-        )
-        
-        print(result.stdout)
+    result = subprocess.run(
+        command,
+        check=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True
+    )
     
-def get_best_reconstruction(output_path:str, dists_list:list, min_mer:int=10, min_dist:int=0, min_path:str='', input_csv_name:str='Reproyecciones.csv'):
+    print(result.stdout)
+    
+def get_best_reconstruction(output_path:str, dists_list:list, min_mer:int=10, min_dist:int=0, min_path:str='', input_csv_name:str='Reproyecciones.csv', calib_path='', bundles_path='', frames_path='', qr_dist:float=2.1):
     mer_minimo = min_mer
     dist_minimo = min_dist
     path_minimo = min_path
@@ -120,6 +117,9 @@ def get_best_reconstruction(output_path:str, dists_list:list, min_mer:int=10, mi
     # Meter reconstruction() acá. VER ARCHIVOS ORIGINALES
     
     for dist in dists:
+        
+        reconstruction(calib_path, bundles_path, frames_path, output_path, qr_dist, dist)
+        
         for path in Path(output_path).rglob(input_csv_name):    # Buscar manera de leer el archivo que genera el comando anterior por distancia de inicialización
                 # print("path:", path)
                 parent , _ = os.path.split(path)
