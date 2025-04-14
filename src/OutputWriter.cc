@@ -41,10 +41,11 @@ void crearDir(string dir){
 }
 
 OutputWriter::OutputWriter(InputParser* input, InputReader* mpInputReader,int f0, int f1 ){
+	int dist = f1 - f0;
 	string o = "-o";
 	string strOutputPath = input->getCmdOption(o);
 	crearDir(strOutputPath);
-	string directory = "/"+to_string(f0)+"_"+to_string(f1);
+	string directory = "/"+to_string(dist)+"_"+to_string(f0)+"_"+to_string(f1);
 	strOutputPath = strOutputPath+directory;
 	crearDir(strOutputPath);
 	this->strOutputPath = strOutputPath;

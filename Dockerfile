@@ -45,12 +45,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 # --- Compilación del script C++ ---
-WORKDIR /app/Release
-RUN dos2unix ./build.sh && chmod +x ./build.sh 
+RUN cd ./Release && chmod +x ./build.sh && ./build.sh
 
-RUN ./build.sh
-
-WORKDIR /app
 # --- Exponer puerto y comando de inicio ---
 EXPOSE 8001
 CMD ["uvicorn", "api.main:app", "--reload", "--host", "0.0.0.0", "--port", "8000"]

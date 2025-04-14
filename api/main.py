@@ -2,7 +2,7 @@ from fastapi import FastAPI, HTTPException, Path
 import subprocess
 from .schemas import OrbSlamRequest
 from .bundles import read_bind_rows, procesar_datos, generate_image_table, write_in_folder
-from .functions import video_to_frame, read_and_process_csv, reconstruction, get_best_reconstruction, csv_to_ply_with_sphere, visualizar_ply
+from .functions import video_to_frame, get_best_triangulacion, csv_to_ply_with_sphere, get_best_triangulacion2
 import sys
 import os
 
@@ -67,22 +67,18 @@ async def orb_run(request: OrbSlamRequest):
         # Si frames están en /input/frames
         frames_path = os.path.join(folder_path, 'frames')
         
-        # Generamos la reconstrucción de bayas
-        reconstruction(calib_path, 
-                       bundles_path, 
-                       frames_path, 
-                       folder_path, 
-                       request.qr_dist, 
-                       dists_list=request.dists_list
-                    )
-        
+        print("Iniciando triangulación...")
         # Elegimos cuál es la mejor reconstrucción
-        path_minimo, mer_minimo, dist_minimo = get_best_reconstruction(output_path=folder_path, 
-                                                                       dists_list=request.dists_list, 
-                                                                       min_mer=request.min_mer, 
-                                                                       min_dist=request.min_dist, 
-                                                                       min_path=request.min_path, 
-                                                                       input_csv_name=request.reproy_csv_name
+        path_minimo, mer_minimo, dist_minimo = get_best_triangulacion(output_path=folder_path, 
+                                                                        dists_list=request.dists_list, 
+                                                                        min_mer=request.min_mer, 
+                                                                        min_dist=request.min_dist, 
+                                                                        min_path=request.min_path, 
+                                                                        input_csv_name=request.reproy_csv_name,
+                                                                        calib_path=calib_path,
+                                                                        bundles_path=bundles_path,
+                                                                        frames_path=frames_path,
+                                                                        qr_dist=request.qr_dist
                                                                     )
         
         print("El mejor path es:", path_minimo)
@@ -91,9 +87,13 @@ async def orb_run(request: OrbSlamRequest):
         
         # Generamos el CSV a PLY
         
+        print("Generando nube de puntos...")
+        
         ply_file = os.path.join(folder_path, 'nube.ply')
         
         csv_to_ply_with_sphere(path_minimo, ply_file, num_points=100)
+        
+        print("Listo!")
         
         return {
             "success": True
@@ -116,8 +116,10 @@ async def orb_run(request: OrbSlamRequest):
 @app.get('/minim-path')
 async def ratio_minimo(request: OrbSlamRequest): 
     
-    path_minimo, mer_minimo, dist_minimo = get_best_reconstruction(
-        output_path=request.output_path,
+    folder_path = os.path.join(request.output_path, request.video_name)
+    
+    path_minimo, mer_minimo, dist_minimo = get_best_triangulacion2(
+        output_path=folder_path,
         dists_list=request.dists_list,
         min_mer=request.min_mer,
         min_dist=request.min_dist,

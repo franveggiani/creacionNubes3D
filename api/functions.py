@@ -6,8 +6,9 @@ import pandas as pd
 import argparse
 import open3d as o3d
 import numpy as np
+import glob
 
-
+# Pasar video.mp4 a frames
 def video_to_frame(video_path, output_folder, video_name="VID_UNKNOWN"):
 
     if not os.path.exists(output_folder):
@@ -47,7 +48,8 @@ def video_to_frame(video_path, output_folder, video_name="VID_UNKNOWN"):
     cv2.destroyAllWindows()
     
     print(f"Se han extraído {frame_count} frames y se han guardado en {output_folder}.")
-    
+
+# Obtener MER
 def read_and_process_csv(csv_file_path):
     if not os.path.exists(csv_file_path):
         print(f"El archivo {csv_file_path} no existe.")
@@ -76,7 +78,6 @@ def read_and_process_csv(csv_file_path):
         
     # Obtener la suma de 'error_ratio' en todo el DataFrame
     suma_error_ratio = df['error_ratio'].sum()
-    print(f"Suma de error_ratio: {suma_error_ratio}")
 
     # Obtener la media de 'error_ratio' en todo el DataFrame
     media_error_ratio = df['error_ratio'].mean()
@@ -84,68 +85,69 @@ def read_and_process_csv(csv_file_path):
     parent , _ = os.path.split(csv_file_path)
     _ , init_frames = os.path.split(parent)
 
-    return video_name, suma_error_ratio, media_error_ratio, init_frames
+    return media_error_ratio
 
-def reconstruction(calib_path, bundles_path, frames_path, output_path, qr_dist, dists_list):
-    dists = [str(i) for i in range(dists_list[0], dists_list[1], dists_list[2])]
-    
-    for dist in dists:
-        
-        command = [
-            "./Release/triangulacionDeBayas",
-            "-c", calib_path,
-            "-d", bundles_path,
-            "-x", str(qr_dist),     # QR dist
-            "-i", str(frames_path),
-            "-o", str(output_path),
-            "--init_distance", dist
-        ]
+# Generar triangulación
+def triangulacion(calib_path, bundles_path, frames_path, output_path, qr_dist, dist):
+    command = [
+        "./Release/triangulacionDeBayas",
+        "-c", calib_path,
+        "-d", bundles_path,
+        "-x", str(qr_dist),     # QR dist
+        "-i", str(frames_path),
+        "-o", str(output_path),
+        "--init_distance", dist
+    ]
 
-        result = subprocess.run(
-            command,
-            check=True,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True
-        )
-        
-        print(result.stdout)
+    result = subprocess.run(
+        command,
+        check=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True
+    )
     
-def get_best_reconstruction(output_path:str, dists_list:list, min_mer:int=10, min_dist:int=0, min_path:str='', input_csv_name:str='Reproyecciones.csv'):
+    print(result.stdout)
+
+# Generar y obtener la mejor triangulación
+def get_best_triangulacion(output_path:str, dists_list:list, min_mer:int=10, min_dist:int=0, min_path:str='', input_csv_name:str='Reproyecciones.csv', calib_path='', bundles_path='', frames_path='', qr_dist:float=2.1):
     mer_minimo = min_mer
     dist_minimo = min_dist
     path_minimo = min_path
+    output = Path(output_path)
+    
+    
     dists = [str(i) for i in range(dists_list[0], dists_list[1], dists_list[2])]
     
-    # Meter reconstruction() acá. VER ARCHIVOS ORIGINALES
-    
     for dist in dists:
-        for path in Path(output_path).rglob(input_csv_name):    # Buscar manera de leer el archivo que genera el comando anterior por distancia de inicialización
-                # print("path:", path)
-                parent , _ = os.path.split(path)
-                _ , init_frames = os.path.split(parent)
-                f1, f2 = init_frames.split("_")
-                print(f"\n{init_frames}")  
-                print(f"int(f2) - int(f1): {int(f2) - int(f1)}, int(dist): {int(dist)}")
+        
+        print("Distancia utilizada: ", dist)
+        triangulacion(calib_path, bundles_path, frames_path, output_path, qr_dist, dist)
+        
+        repro_path = glob.glob(f"{output_path}/{dist}_*/{input_csv_name}")
+        
+        if repro_path:
+            print(f"Ruta encontrada: {repro_path[0]}")
+            repro_path = repro_path[0]
+        else:
+            print(f"No se encontró el archivo reproyeccion.csv en una carpeta que empiece con '{dist}_'")
+            continue
+            
+        media_error_ratio = read_and_process_csv(repro_path)
                 
-                if int(f2) - int(f1) != int(dist): continue         
-
-                _,_,media_error_ratio,_ = read_and_process_csv(path)
-                print(f"media_error_ratio: {media_error_ratio}")
-                
-                # if media_error_ratio < 0.08:
-                #     print(f"Esta reconstrucción es lo suficientemente buena porque su mer es de {media_error_ratio}")
-                #     return path, media_error_ratio, dist
-                
-                if media_error_ratio < mer_minimo:
-                    mer_minimo = media_error_ratio
-                    dist_minimo = dist
-                    path_minimo = path
+        if media_error_ratio < 0.08:
+            print(f"Esta reconstrucción es lo suficientemente buena porque su mer es de {media_error_ratio}")
+            return repro_path, media_error_ratio, dist
+        
+        if media_error_ratio < mer_minimo:
+            mer_minimo = media_error_ratio
+            dist_minimo = dist
+            path_minimo = repro_path
                     
     return path_minimo, mer_minimo, dist_minimo
 
-# GENERAR NUBE DENSA
 
+# Generar nube densa
 def generate_random_points_on_sphere(center, radius, num_points):
     """Genera puntos aleatorios en la superficie de una esfera con radio dado."""
     phi = np.random.uniform(0, 2 * np.pi, num_points)
@@ -196,17 +198,37 @@ def visualizar_ply(ply_file):
     nube = o3d.io.read_point_cloud(ply_file)
     o3d.visualization.draw_geometries([nube])
 
-# Transferir al endpoint
-def main():
-    parser = argparse.ArgumentParser(description="Convertir un archivo CSV con datos de bayas en un archivo PLY con una nube de puntos.")
-    parser.add_argument("csv_file", type=str, help="Ruta del archivo CSV de entrada")
-    parser.add_argument("ply_file", type=str, help="Ruta del archivo PLY de salida")
-    parser.add_argument("num_points", type=int, help="Número de puntos a generar en la superficie de cada baya")
-    parser.add_argument("--visualizar", action="store_true", help="Mostrar la nube de puntos después de generarla")
 
-    args = parser.parse_args()
+# PRUEBA GBT - IGNORAR
+def get_best_triangulacion2(output_path:str, dists_list:list, min_mer:int=10, min_dist:int=0, min_path:str='', input_csv_name:str='Reproyecciones.csv'):
+    mer_minimo = min_mer
+    dist_minimo = min_dist
+    path_minimo = min_path
     
-    csv_to_ply_with_sphere(args.csv_file, args.ply_file, args.num_points)
-
-    if args.visualizar:
-        visualizar_ply(args.ply_file)
+    dists = [str(i) for i in range(dists_list[0], dists_list[1], dists_list[2])]
+    
+    for dist in dists:
+        
+        print(dist)
+        
+        repro_path = glob.glob(f"{output_path}/{dist}_*/{input_csv_name}")
+        
+        if repro_path:
+            print(f"Ruta encontrada: {repro_path[0]}")
+            repro_path = repro_path[0]
+        else:
+            print(f"No se encontró el archivo reproyeccion.csv en una carpeta que empiece con '{dist}_'")
+            continue
+            
+        media_error_ratio = read_and_process_csv(repro_path)
+                
+        if media_error_ratio < 0.08:
+            print(f"Esta reconstrucción es lo suficientemente buena porque su mer es de {media_error_ratio}")
+            return repro_path, media_error_ratio, dist
+        
+        if media_error_ratio < mer_minimo:
+            mer_minimo = media_error_ratio
+            dist_minimo = dist
+            path_minimo = repro_path
+                    
+    return path_minimo, mer_minimo, dist_minimo
