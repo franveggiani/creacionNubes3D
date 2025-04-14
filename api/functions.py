@@ -112,12 +112,10 @@ def triangulacion(calib_path, bundles_path, frames_path, output_path, qr_dist, d
             text=True
         )
         
-        print(result.stdout)
-        
         repro_path = glob.glob(f"{output_path}/{dist}_*/{input_csv_name}")
             
         if repro_path:
-            print(f"Ruta encontrada: {repro_path[0]}")
+            # print(f"Ruta encontrada: {repro_path[0]}")
             repro_path = repro_path[0]
         else:
             print(f"No se encontró el archivo reproyeccion.csv en una carpeta que empiece con '{dist}_'")
