@@ -53,7 +53,6 @@ async def orb_run(request: OrbSlamRequest):
 
         # Elimino el ./ del inicio de la ruta del video
         video_path = video_path.replace('./', '') if video_path.startswith('./') else video_path
-
         video_to_frame(video_path, output_frames, request.video_name)
 
         # RECONSTRUCCIÓN DE BAYAS
@@ -67,7 +66,7 @@ async def orb_run(request: OrbSlamRequest):
         # Si frames están en /input/frames
         frames_path = os.path.join(folder_path, 'frames')
         
-        print("Iniciando triangulación...")
+        # print("Iniciando triangulación...")
         # Elegimos cuál es la mejor reconstrucción
         path_minimo, mer_minimo, dist_minimo = get_best_triangulacion(output_path=folder_path, 
                                                                         dists_list=request.dists_list, 

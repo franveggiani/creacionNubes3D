@@ -155,11 +155,6 @@ def get_best_triangulacion(output_path:str, dists_list:list, min_mer:int=10, min
             result = future.result()
             if result:
                 results.append(result)
-
-                if result['media_error_ratio'] < 0.08:
-                    print(f"Esta reconstrucción es lo suficientemente buena porque su mer es de {result['media_error_ratio']}")
-                    return result['repro_path'], result['media_error_ratio'], result['dist']
-
                 
                 if best is None or result['media_error_ratio'] < mer_minimo:
                     best = result
@@ -167,8 +162,18 @@ def get_best_triangulacion(output_path:str, dists_list:list, min_mer:int=10, min
                     dist_minimo = result['dist']
                     path_minimo = result['repro_path']
                     print(f"Mejor reconstrucción hasta ahora: {mer_minimo} con distancia {dist_minimo}")
+
+                if mer_minimo < 0.08:
+                    print(f"Esta reconstrucción es lo suficientemente buena porque su mer es de {result['media_error_ratio']}")
+                    break
+                
+    # Guardar resultados de las triangulaciones
+    logs = pd.DataFrame(results)
+    logs.to_csv(os.path.join(output_path, 'logs.csv'), index=False)
             
     return path_minimo, mer_minimo, dist_minimo
+
+
 
 
 # Generar nube densa
