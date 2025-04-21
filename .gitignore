@@ -32,3 +32,4 @@ data/
 input/
 output/
 Release/triangulacionDeBayas
+api/__pycache__/

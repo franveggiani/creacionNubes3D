@@ -1,3 +1,4 @@
+from concurrent.futures import ProcessPoolExecutor, as_completed
 import cv2
 import os
 import subprocess
@@ -88,63 +89,91 @@ def read_and_process_csv(csv_file_path):
     return media_error_ratio
 
 # Generar triangulación
-def triangulacion(calib_path, bundles_path, frames_path, output_path, qr_dist, dist):
-    command = [
-        "./Release/triangulacionDeBayas",
-        "-c", calib_path,
-        "-d", bundles_path,
-        "-x", str(qr_dist),     # QR dist
-        "-i", str(frames_path),
-        "-o", str(output_path),
-        "--init_distance", dist
-    ]
+def triangulacion(calib_path, bundles_path, frames_path, output_path, qr_dist, dist, input_csv_name):
+    try: 
+        
+        print(f"[{dist}] Iniciando triangulación... \n") 
+        
+        command = [
+            "./Release/triangulacionDeBayas",
+            "-c", calib_path,
+            "-d", bundles_path,
+            "-x", str(qr_dist),     # QR dist
+            "-i", str(frames_path),
+            "-o", str(output_path),
+            "--init_distance", dist
+        ]
 
-    result = subprocess.run(
-        command,
-        check=True,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        text=True
-    )
+        result = subprocess.run(
+            command,
+            check=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True
+        )
+        
+        repro_path = glob.glob(f"{output_path}/{dist}_*/{input_csv_name}")
+            
+        if repro_path:
+            # print(f"Ruta encontrada: {repro_path[0]}")
+            repro_path = repro_path[0]
+        else:
+            print(f"No se encontró el archivo reproyeccion.csv en una carpeta que empiece con '{dist}_'")
+            return None
+                
+        media_error_ratio = read_and_process_csv(repro_path)
+        
+        return {
+            "repro_path": repro_path,
+            "media_error_ratio": media_error_ratio,
+            "dist": dist
+        }
+        
+    except subprocess.CalledProcessError as e:
+        print(f"[{dist}] Error en la triangulación: {e.stderr}")  
+        return None
     
-    print(result.stdout)
-
 # Generar y obtener la mejor triangulación
 def get_best_triangulacion(output_path:str, dists_list:list, min_mer:int=10, min_dist:int=0, min_path:str='', input_csv_name:str='Reproyecciones.csv', calib_path='', bundles_path='', frames_path='', qr_dist:float=2.1):
     mer_minimo = min_mer
     dist_minimo = min_dist
     path_minimo = min_path
-    output = Path(output_path)
-    
-    
+     
     dists = [str(i) for i in range(dists_list[0], dists_list[1], dists_list[2])]
+    results = []
     
-    for dist in dists:
+    with ProcessPoolExecutor() as executor:
+        # Ejecuto la triangulación en paralelo
+        futures = {
+            executor.submit(triangulacion, calib_path, bundles_path, frames_path, output_path, qr_dist, dist, input_csv_name): dist for dist in dists
+        }
         
-        print("Distancia utilizada: ", dist)
-        triangulacion(calib_path, bundles_path, frames_path, output_path, qr_dist, dist)
+        best = None
         
-        repro_path = glob.glob(f"{output_path}/{dist}_*/{input_csv_name}")
-        
-        if repro_path:
-            print(f"Ruta encontrada: {repro_path[0]}")
-            repro_path = repro_path[0]
-        else:
-            print(f"No se encontró el archivo reproyeccion.csv en una carpeta que empiece con '{dist}_'")
-            continue
-            
-        media_error_ratio = read_and_process_csv(repro_path)
+        # Guardo resultados de ejecución
+        for future in as_completed(futures):
+            result = future.result()
+            if result:
+                results.append(result)
                 
-        if media_error_ratio < 0.08:
-            print(f"Esta reconstrucción es lo suficientemente buena porque su mer es de {media_error_ratio}")
-            return repro_path, media_error_ratio, dist
-        
-        if media_error_ratio < mer_minimo:
-            mer_minimo = media_error_ratio
-            dist_minimo = dist
-            path_minimo = repro_path
-                    
+                if best is None or result['media_error_ratio'] < mer_minimo:
+                    best = result
+                    mer_minimo = result['media_error_ratio']
+                    dist_minimo = result['dist']
+                    path_minimo = result['repro_path']
+                    print(f"Mejor reconstrucción hasta ahora: {mer_minimo} con distancia {dist_minimo}")
+
+                if mer_minimo < 0.08:
+                    print(f"Esta reconstrucción es lo suficientemente buena porque su mer es de {result['media_error_ratio']}")
+                    break
+                
+    # Guardar resultados de las triangulaciones
+    logs = pd.DataFrame(results)
+    logs.to_csv(os.path.join(output_path, 'logs.csv'), index=False)
+            
     return path_minimo, mer_minimo, dist_minimo
+
+
 
 
 # Generar nube densa
